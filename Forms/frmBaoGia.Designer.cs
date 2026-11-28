@@ -52,6 +52,7 @@
             this.mnuBCDoanhThu = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuBCTonKho = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuThoat = new System.Windows.Forms.ToolStripMenuItem();
+            this.button1 = new System.Windows.Forms.Button();
             this.flpPhien.SuspendLayout();
             this.mnuChinh.SuspendLayout();
             this.SuspendLayout();
@@ -251,11 +252,21 @@
             this.mnuThoat.Size = new System.Drawing.Size(50, 22);
             this.mnuThoat.Text = "Thoát";
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(122, 108);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 6;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            // 
             // frmBaoGia
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.flpPhien);
             this.Controls.Add(this.mnuChinh);
             this.MainMenuStrip = this.mnuChinh;
@@ -296,5 +307,6 @@
         private System.Windows.Forms.ToolStripMenuItem mnuBCDoanhThu;
         private System.Windows.Forms.ToolStripMenuItem mnuBCTonKho;
         private System.Windows.Forms.ToolStripMenuItem mnuThoat;
+        private System.Windows.Forms.Button button1;
     }
 }

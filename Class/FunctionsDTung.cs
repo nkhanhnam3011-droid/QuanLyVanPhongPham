@@ -9,15 +9,13 @@ namespace QuanLyVanPhongPham.Class
     // Lớp hàm dùng riêng cho phần Phiếu nhập kho và Phiếu trả hàng (Đ Tùng)
     public static class FunctionsDTung
     {
-        // 1. Thông tin phiên đăng nhập tạm & hàm phân quyền (chờ ghép nhóm)
-        // Khi ghép với frmDangNhap, chỉ cần gọi SetPhienDangNhap(...) sau khi đăng nhập thành công.
-        // Đổi TenDangNhapHienTai thành "admin", "kho", "banhang" hoặc "ketoan" để test.
+        // 1. Phiên đăng nhập tạm & phân quyền (chờ ghép form Đăng nhập của nhóm)
+        // Đổi TenDangNhapHienTai sang "admin", "kho", "banhang", "ketoan" để test quyền
         public static int MaTaiKhoanHienTai { get; private set; }
         public static string TenDangNhapHienTai { get; private set; } = "admin";
         public static string HoTenHienTai { get; private set; } = "";
         public static string MaVaiTroHienTai { get; private set; } = "ADMIN";
 
-        // Nạp thông tin tài khoản mặc định từ CSDL nếu chưa gắn phiên đăng nhập thật
         public static void KhoiTaoPhienMacDinh()
         {
             if (MaTaiKhoanHienTai > 0)
@@ -26,7 +24,6 @@ namespace QuanLyVanPhongPham.Class
             string sql = "SELECT TOP 1 MaTaiKhoan, TenDangNhap, HoTen, MaVaiTro " +
                          "FROM TaiKhoan WHERE TenDangNhap = @TenDN AND TrangThai = 1";
             DataTable dt = Functions.GetDataToTable(sql, new SqlParameter("@TenDN", TenDangNhapHienTai));
-
             if (dt.Rows.Count == 0)
             {
                 sql = "SELECT TOP 1 MaTaiKhoan, TenDangNhap, HoTen, MaVaiTro " +
@@ -37,14 +34,14 @@ namespace QuanLyVanPhongPham.Class
             if (dt.Rows.Count > 0)
             {
                 DataRow r = dt.Rows[0];
-                MaTaiKhoanHienTai = Convert.ToInt32(r["MaTaiKhoan"]);
-                TenDangNhapHienTai = Convert.ToString(r["TenDangNhap"]);
-                HoTenHienTai = Convert.ToString(r["HoTen"]);
-                MaVaiTroHienTai = Convert.ToString(r["MaVaiTro"]);
+                SetPhienDangNhap(
+                    Convert.ToInt32(r["MaTaiKhoan"]),
+                    Convert.ToString(r["TenDangNhap"]),
+                    Convert.ToString(r["HoTen"]),
+                    Convert.ToString(r["MaVaiTro"]));
             }
         }
 
-        // Gán phiên đăng nhập hiện tại khi ghép với frmDangNhap của nhóm
         public static void SetPhienDangNhap(int maTaiKhoan, string tenDangNhap, string hoTen, string maVaiTro)
         {
             MaTaiKhoanHienTai = maTaiKhoan;
@@ -53,49 +50,35 @@ namespace QuanLyVanPhongPham.Class
             MaVaiTroHienTai = maVaiTro;
         }
 
-        // Kiểm tra người dùng hiện tại có thuộc một trong các vai trò được phép hay không
         public static bool CoQuyen(params string[] danhSachVaiTro)
         {
-            if (danhSachVaiTro == null || danhSachVaiTro.Length == 0)
-                return false;
-            if (string.IsNullOrWhiteSpace(MaVaiTroHienTai))
+            if (danhSachVaiTro == null || string.IsNullOrWhiteSpace(MaVaiTroHienTai))
                 return false;
 
-            string vaiTroHienTai = MaVaiTroHienTai.Trim();
             foreach (string vaiTro in danhSachVaiTro)
             {
                 if (!string.IsNullOrWhiteSpace(vaiTro) &&
-                    string.Equals(vaiTroHienTai, vaiTro.Trim(), StringComparison.OrdinalIgnoreCase))
-                {
+                    string.Equals(MaVaiTroHienTai.Trim(), vaiTro.Trim(), StringComparison.OrdinalIgnoreCase))
                     return true;
-                }
             }
             return false;
         }
 
-        // Kiểm tra quyền ngay trong mã lệnh xử lý (QT13); tự hiện thông báo chặn nếu không đủ quyền
+        // Kiểm tra quyền ngay trong mã lệnh xử lý (QT13)
         public static bool YeuCauQuyen(string tenThaoTac, params string[] danhSachVaiTro)
         {
-            if (!CoQuyen(danhSachVaiTro))
-            {
-                MessageBox.Show(
-                    "Bạn không có quyền thực hiện thao tác: " + tenThaoTac + "!",
-                    "Chặn quyền",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Stop);
-                return false;
-            }
-            return true;
+            if (CoQuyen(danhSachVaiTro))
+                return true;
+
+            MessageBox.Show("Bạn không có quyền thực hiện thao tác: " + tenThaoTac + "!", "Chặn quyền", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+            return false;
         }
 
-        // 2. Hàm tiện ích chung (sinh mã, nhập liệu, định dạng tiền, hộp thoại hủy)
-
-        // Sinh mã chứng từ nối tiếp theo dữ liệu mẫu (VD: PN001 -> PN002 -> PN003)
+        // 2. Hàm tiện ích chung (sinh mã nối tiếp, nhập số, tiền, lý do hủy)
         public static string TaoMaChungTu(string tenBang, string tenCotMa, string tienTo)
         {
-            bool hopLe = (tenBang == "PhieuNhap" && tenCotMa == "MaPhieuNhap") ||
-                         (tenBang == "PhieuTra" && tenCotMa == "MaPhieuTra");
-            if (!hopLe)
+            if ((tenBang != "PhieuNhap" || tenCotMa != "MaPhieuNhap") &&
+                (tenBang != "PhieuTra" || tenCotMa != "MaPhieuTra"))
                 throw new ArgumentException("Bảng hoặc cột sinh mã không hợp lệ.");
 
             string sql = "SELECT " + tenCotMa + " FROM " + tenBang + " WHERE " + tenCotMa + " LIKE @TienTo";
@@ -105,36 +88,27 @@ namespace QuanLyVanPhongPham.Class
             foreach (DataRow row in dt.Rows)
             {
                 string ma = Convert.ToString(row[tenCotMa]);
-                if (!string.IsNullOrEmpty(ma) && ma.StartsWith(tienTo, StringComparison.OrdinalIgnoreCase))
+                int so;
+                if (ma.StartsWith(tienTo, StringComparison.OrdinalIgnoreCase) &&
+                    int.TryParse(ma.Substring(tienTo.Length), out so) && so > maxSo)
                 {
-                    string phanSo = ma.Substring(tienTo.Length);
-                    int so;
-                    if (int.TryParse(phanSo, out so) && so > maxSo)
-                    {
-                        maxSo = so;
-                    }
+                    maxSo = so;
                 }
             }
-
             return tienTo + (maxSo + 1).ToString("000");
         }
 
-        // Chỉ cho phép nhập chữ số nguyên và phím điều khiển (Backspace) vào TextBox
         public static void ChiChoNhapSoNguyen(object sender, KeyPressEventArgs e)
         {
             if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
-            {
                 e.Handled = true;
-            }
         }
 
-        // Định dạng số tiền hiển thị theo chuẩn phân cách hàng nghìn
         public static string DinhDangTien(decimal soTien)
         {
             return soTien.ToString("#,##0") + " đ";
         }
 
-        // Bật hộp thoại nhập lý do hủy chứng từ (bắt buộc nhập nội dung trước khi xác nhận)
         public static string NhapLyDoHuy(string tieuDe, string noiDung, string giaTriMacDinh = "")
         {
             using (Form frm = new Form())
@@ -147,30 +121,16 @@ namespace QuanLyVanPhongPham.Class
                 frm.MinimizeBox = false;
                 frm.Font = new Font("Segoe UI", 9.75F);
 
-                Label lbl = new Label();
-                lbl.Text = noiDung;
-                lbl.Location = new Point(14, 12);
-                lbl.Size = new Size(412, 36);
+                Label lbl = new Label { Text = noiDung, Location = new Point(14, 12), Size = new Size(412, 36) };
+                TextBox txt = new TextBox { Location = new Point(14, 52), Size = new Size(412, 25), MaxLength = 250, Text = giaTriMacDinh ?? "" };
+                Button btnOK = new Button { Text = "Xác nhận", Location = new Point(242, 98), Size = new Size(88, 30) };
+                Button btnCancel = new Button { Text = "Hủy bỏ", Location = new Point(338, 98), Size = new Size(88, 30), DialogResult = DialogResult.Cancel };
 
-                TextBox txt = new TextBox();
-                txt.Location = new Point(14, 52);
-                txt.Size = new Size(412, 25);
-                txt.MaxLength = 250;
-                txt.Text = giaTriMacDinh ?? "";
-
-                Button btnOK = new Button();
-                btnOK.Text = "Xác nhận";
-                btnOK.Location = new Point(242, 98);
-                btnOK.Size = new Size(88, 30);
                 btnOK.Click += delegate
                 {
                     if (string.IsNullOrWhiteSpace(txt.Text))
                     {
-                        MessageBox.Show(
-                            "Vui lòng nhập lý do hủy phiếu!",
-                            "Thiếu thông tin",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning);
+                        MessageBox.Show("Vui lòng nhập lý do hủy phiếu!", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         txt.Focus();
                         return;
                     }
@@ -178,29 +138,24 @@ namespace QuanLyVanPhongPham.Class
                     frm.Close();
                 };
 
-                Button btnCancel = new Button();
-                btnCancel.Text = "Hủy bỏ";
-                btnCancel.Location = new Point(338, 98);
-                btnCancel.Size = new Size(88, 30);
-                btnCancel.DialogResult = DialogResult.Cancel;
-
-                frm.Controls.Add(lbl);
-                frm.Controls.Add(txt);
-                frm.Controls.Add(btnOK);
-                frm.Controls.Add(btnCancel);
+                frm.Controls.AddRange(new Control[] { lbl, txt, btnOK, btnCancel });
                 frm.AcceptButton = btnOK;
                 frm.CancelButton = btnCancel;
-
-                if (frm.ShowDialog() == DialogResult.OK)
-                    return txt.Text.Trim();
-
-                return null;
+                return frm.ShowDialog() == DialogResult.OK ? txt.Text.Trim() : null;
             }
         }
 
-        // 3. Nghiệp vụ SqlTransaction cho Phiếu nhập kho
+        // 3. Nghiệp vụ Phiếu nhập kho (dùng SqlTransaction đảm bảo đồng bộ)
+        private static int RunSqlTran(string sql, SqlTransaction tran, params SqlParameter[] thamSo)
+        {
+            using (SqlCommand cmd = new SqlCommand(sql, Functions.Conn, tran))
+            {
+                if (thamSo != null)
+                    cmd.Parameters.AddRange(thamSo);
+                return cmd.ExecuteNonQuery();
+            }
+        }
 
-        // Lưu phiếu nhập ở trạng thái Nháp và toàn bộ dòng chi tiết trong 1 SqlTransaction
         public static void LuuPhieuNhap(string maPN, DateTime ngayLap, string maNCC, int nguoiLap, DataTable tblChiTiet, bool laPhieuMoi)
         {
             if (tblChiTiet == null || tblChiTiet.Rows.Count == 0)
@@ -208,9 +163,7 @@ namespace QuanLyVanPhongPham.Class
 
             decimal tongTien = 0;
             foreach (DataRow row in tblChiTiet.Rows)
-            {
                 tongTien += Convert.ToDecimal(row["ThanhTien"]);
-            }
 
             Functions.Connect();
             SqlTransaction tran = Functions.Conn.BeginTransaction();
@@ -218,58 +171,35 @@ namespace QuanLyVanPhongPham.Class
             {
                 if (laPhieuMoi)
                 {
-                    string sqlInsertMaster =
-                        "INSERT INTO PhieuNhap (MaPhieuNhap, NgayLap, NgayXacNhan, MaNCC, NguoiLap, NguoiXacNhan, TrangThai, LyDoHuy, TongTien) " +
-                        "VALUES (@MaPN, @NgayLap, NULL, @MaNCC, @NguoiLap, NULL, N'Nháp', NULL, @TongTien)";
-                    using (SqlCommand cmd = new SqlCommand(sqlInsertMaster, Functions.Conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@MaPN", maPN);
-                        cmd.Parameters.AddWithValue("@NgayLap", ngayLap);
-                        cmd.Parameters.AddWithValue("@MaNCC", maNCC);
-                        cmd.Parameters.AddWithValue("@NguoiLap", nguoiLap);
-                        cmd.Parameters.AddWithValue("@TongTien", tongTien);
-                        cmd.ExecuteNonQuery();
-                    }
+                    string sql = "INSERT INTO PhieuNhap (MaPhieuNhap, NgayLap, MaNCC, NguoiLap, TrangThai, TongTien) " +
+                                 "VALUES (@MaPN, @NgayLap, @MaNCC, @NguoiLap, N'Nháp', @TongTien)";
+                    RunSqlTran(sql, tran,
+                        new SqlParameter("@MaPN", maPN),
+                        new SqlParameter("@NgayLap", ngayLap),
+                        new SqlParameter("@MaNCC", maNCC),
+                        new SqlParameter("@NguoiLap", nguoiLap),
+                        new SqlParameter("@TongTien", tongTien));
                 }
                 else
                 {
-                    string sqlUpdateMaster =
-                        "UPDATE PhieuNhap SET MaNCC = @MaNCC, TongTien = @TongTien " +
-                        "WHERE MaPhieuNhap = @MaPN AND TrangThai = N'Nháp'";
-                    int rows;
-                    using (SqlCommand cmd = new SqlCommand(sqlUpdateMaster, Functions.Conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@MaNCC", maNCC);
-                        cmd.Parameters.AddWithValue("@TongTien", tongTien);
-                        cmd.Parameters.AddWithValue("@MaPN", maPN);
-                        rows = cmd.ExecuteNonQuery();
-                    }
-
-                    if (rows == 0)
+                    string sqlUp = "UPDATE PhieuNhap SET MaNCC = @MaNCC, TongTien = @TongTien " +
+                                   "WHERE MaPhieuNhap = @MaPN AND TrangThai = N'Nháp'";
+                    if (RunSqlTran(sqlUp, tran, new SqlParameter("@MaNCC", maNCC), new SqlParameter("@TongTien", tongTien), new SqlParameter("@MaPN", maPN)) == 0)
                         throw new Exception("Phiếu nhập không còn ở trạng thái Nháp nên không thể chỉnh sửa!");
 
-                    string sqlDeleteDetail = "DELETE FROM ChiTietNhap WHERE MaPhieuNhap = @MaPN";
-                    using (SqlCommand cmd = new SqlCommand(sqlDeleteDetail, Functions.Conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@MaPN", maPN);
-                        cmd.ExecuteNonQuery();
-                    }
+                    RunSqlTran("DELETE FROM ChiTietNhap WHERE MaPhieuNhap = @MaPN", tran, new SqlParameter("@MaPN", maPN));
                 }
 
-                string sqlInsertDetail =
-                    "INSERT INTO ChiTietNhap (MaPhieuNhap, MaHang, SoLuong, DonGiaNhap, ThanhTien) " +
-                    "VALUES (@MaPN, @MaHang, @SoLuong, @DonGiaNhap, @ThanhTien)";
+                string sqlCT = "INSERT INTO ChiTietNhap (MaPhieuNhap, MaHang, SoLuong, DonGiaNhap, ThanhTien) " +
+                               "VALUES (@MaPN, @MaHang, @SoLuong, @DonGiaNhap, @ThanhTien)";
                 foreach (DataRow row in tblChiTiet.Rows)
                 {
-                    using (SqlCommand cmd = new SqlCommand(sqlInsertDetail, Functions.Conn, tran))
-                    {
-                        cmd.Parameters.AddWithValue("@MaPN", maPN);
-                        cmd.Parameters.AddWithValue("@MaHang", Convert.ToString(row["MaHang"]));
-                        cmd.Parameters.AddWithValue("@SoLuong", Convert.ToInt32(row["SoLuong"]));
-                        cmd.Parameters.AddWithValue("@DonGiaNhap", Convert.ToDecimal(row["DonGiaNhap"]));
-                        cmd.Parameters.AddWithValue("@ThanhTien", Convert.ToDecimal(row["ThanhTien"]));
-                        cmd.ExecuteNonQuery();
-                    }
+                    RunSqlTran(sqlCT, tran,
+                        new SqlParameter("@MaPN", maPN),
+                        new SqlParameter("@MaHang", Convert.ToString(row["MaHang"])),
+                        new SqlParameter("@SoLuong", Convert.ToInt32(row["SoLuong"])),
+                        new SqlParameter("@DonGiaNhap", Convert.ToDecimal(row["DonGiaNhap"])),
+                        new SqlParameter("@ThanhTien", Convert.ToDecimal(row["ThanhTien"])));
                 }
 
                 tran.Commit();
@@ -282,54 +212,36 @@ namespace QuanLyVanPhongPham.Class
             }
         }
 
-        // Xác nhận nhập kho và cộng tồn kho cho từng mặt hàng trong 1 SqlTransaction (QT08)
         public static void XacNhanPhieuNhap(string maPN, int nguoiXacNhan)
         {
             Functions.Connect();
             SqlTransaction tran = Functions.Conn.BeginTransaction();
             try
             {
-                string sqlConfirm =
-                    "UPDATE PhieuNhap " +
-                    "SET TrangThai = N'Đã xác nhận', NgayXacNhan = GETDATE(), NguoiXacNhan = @NguoiXacNhan " +
-                    "WHERE MaPhieuNhap = @MaPN AND TrangThai = N'Nháp'";
-                int rows;
-                using (SqlCommand cmd = new SqlCommand(sqlConfirm, Functions.Conn, tran))
-                {
-                    cmd.Parameters.AddWithValue("@NguoiXacNhan", nguoiXacNhan);
-                    cmd.Parameters.AddWithValue("@MaPN", maPN);
-                    rows = cmd.ExecuteNonQuery();
-                }
-
-                if (rows == 0)
+                string sqlXN = "UPDATE PhieuNhap SET TrangThai = N'Đã xác nhận', NgayXacNhan = GETDATE(), NguoiXacNhan = @NguoiXN " +
+                               "WHERE MaPhieuNhap = @MaPN AND TrangThai = N'Nháp'";
+                if (RunSqlTran(sqlXN, tran, new SqlParameter("@NguoiXN", nguoiXacNhan), new SqlParameter("@MaPN", maPN)) == 0)
                     throw new Exception("Chỉ phiếu nhập đang ở trạng thái Nháp mới được xác nhận!");
 
                 DataTable dtChiTiet = new DataTable();
-                string sqlGetDetail = "SELECT MaHang, SoLuong FROM ChiTietNhap WHERE MaPhieuNhap = @MaPN";
-                using (SqlCommand cmd = new SqlCommand(sqlGetDetail, Functions.Conn, tran))
+                using (SqlCommand cmd = new SqlCommand("SELECT MaHang, SoLuong FROM ChiTietNhap WHERE MaPhieuNhap = @MaPN", Functions.Conn, tran))
                 {
                     cmd.Parameters.AddWithValue("@MaPN", maPN);
                     using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
                         dtChiTiet.Load(reader);
-                    }
                 }
 
                 if (dtChiTiet.Rows.Count == 0)
                     throw new Exception("Phiếu nhập phải có ít nhất 1 dòng mặt hàng trước khi xác nhận!");
 
-                string sqlCongTon = "UPDATE HangHoa SET SoLuongTon = SoLuongTon + @SoLuong WHERE MaHang = @MaHang";
                 foreach (DataRow row in dtChiTiet.Rows)
                 {
                     string maHang = Convert.ToString(row["MaHang"]);
                     int soLuong = Convert.ToInt32(row["SoLuong"]);
-                    using (SqlCommand cmd = new SqlCommand(sqlCongTon, Functions.Conn, tran))
+                    if (RunSqlTran("UPDATE HangHoa SET SoLuongTon = SoLuongTon + @SoLuong WHERE MaHang = @MaHang",
+                        tran, new SqlParameter("@SoLuong", soLuong), new SqlParameter("@MaHang", maHang)) == 0)
                     {
-                        cmd.Parameters.AddWithValue("@SoLuong", soLuong);
-                        cmd.Parameters.AddWithValue("@MaHang", maHang);
-                        int updated = cmd.ExecuteNonQuery();
-                        if (updated == 0)
-                            throw new Exception("Không tìm thấy mặt hàng " + maHang + " để cộng tồn kho!");
+                        throw new Exception("Không tìm thấy mặt hàng " + maHang + " để cộng tồn kho!");
                     }
                 }
 
@@ -343,18 +255,11 @@ namespace QuanLyVanPhongPham.Class
             }
         }
 
-        // Hủy phiếu nhập đang ở trạng thái Nháp và lưu lý do hủy
         public static void HuyPhieuNhap(string maPN, string lyDoHuy)
         {
-            string sql =
-                "UPDATE PhieuNhap SET TrangThai = N'Đã hủy', LyDoHuy = @LyDoHuy " +
-                "WHERE MaPhieuNhap = @MaPN AND TrangThai = N'Nháp'";
-            int rows = Functions.RunSql(
-                sql,
-                new SqlParameter("@LyDoHuy", lyDoHuy),
-                new SqlParameter("@MaPN", maPN));
-
-            if (rows == 0)
+            string sql = "UPDATE PhieuNhap SET TrangThai = N'Đã hủy', LyDoHuy = @LyDoHuy " +
+                         "WHERE MaPhieuNhap = @MaPN AND TrangThai = N'Nháp'";
+            if (Functions.RunSql(sql, new SqlParameter("@LyDoHuy", lyDoHuy), new SqlParameter("@MaPN", maPN)) == 0)
                 throw new Exception("Chỉ được hủy phiếu nhập đang ở trạng thái Nháp!");
         }
     }

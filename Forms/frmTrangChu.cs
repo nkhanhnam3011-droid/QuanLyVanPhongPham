@@ -110,5 +110,10 @@ namespace QuanLyVanPhongPham.Forms
             //Class.Functions.Disconnect();
             Application.Exit();
         }
+
+        private void frmTrangChu_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

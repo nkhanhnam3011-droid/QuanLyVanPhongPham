@@ -256,9 +256,9 @@ namespace QuanLyVanPhongPham.Forms
 
             // Ẩn phần 1 (Tìm kiếm & Danh sách) khi lập mới để giao diện gọn hơn
             grpDanhSach.Visible = !laPhieuMoi;
-            grpThongTinChung.Top = laPhieuMoi ? 80 : 290;
-            grpChiTiet.Top = laPhieuMoi ? 260 : 470;
-            grpChiTiet.Height = btnLapMoi.Top - 10 - grpChiTiet.Top;
+            grpThongTinChung.Top = laPhieuMoi ? 58 : 230;
+            grpChiTiet.Top = laPhieuMoi ? 200 : 372;
+            grpChiTiet.Height = btnLapMoi.Top - 8 - grpChiTiet.Top;
 
             cboNhaCungCap.Enabled = duocSua;
             cboHangHoa.Enabled = duocSua;
@@ -404,7 +404,7 @@ namespace QuanLyVanPhongPham.Forms
             int soLuong;
             if (!int.TryParse(txtSoLuong.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out soLuong) || soLuong <= 0)
             {
-                MessageBox.Show("Số lượng nhập phải là số nguyên dương lớn hơn 0 (QT04)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Số lượng nhập phải là số nguyên dương lớn hơn 0", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtSoLuong.Focus();
                 return;
             }
@@ -412,7 +412,7 @@ namespace QuanLyVanPhongPham.Forms
             long donGiaNguyen;
             if (!long.TryParse(txtDonGiaNhap.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out donGiaNguyen) || donGiaNguyen <= 0)
             {
-                MessageBox.Show("Đơn giá nhập phải là số nguyên dương lớn hơn 0 (QT04)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Đơn giá nhập phải là số nguyên dương lớn hơn 0", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtDonGiaNhap.Focus();
                 return;
             }
@@ -437,7 +437,7 @@ namespace QuanLyVanPhongPham.Forms
                 decimal giaCu = Convert.ToDecimal(dongCu["DonGiaNhap"]);
                 decimal giaChon = giaCu;
 
-                // QT03: Trùng hàng khác đơn giá nhập thì hỏi cập nhật giá mới hay giữ giá cũ
+                // Trùng mặt hàng nhưng khác đơn giá nhập thì hỏi cập nhật giá mới hay giữ giá cũ
                 if (giaCu != donGiaNhap)
                 {
                     DialogResult hoi = MessageBox.Show(
@@ -551,7 +551,7 @@ namespace QuanLyVanPhongPham.Forms
             }
             if (tblChiTiet.Rows.Count == 0)
             {
-                MessageBox.Show("Phiếu nhập phải có ít nhất một dòng mặt hàng (QT04)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Phiếu nhập phải có ít nhất một dòng mặt hàng!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 cboHangHoa.Focus();
                 return;
             }
@@ -646,7 +646,7 @@ namespace QuanLyVanPhongPham.Forms
             }
             if (trangThaiHienTai != "Nháp")
             {
-                MessageBox.Show("Không thể hủy phiếu đã xác nhận hoặc đã hủy (QT11)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Không thể hủy phiếu đã xác nhận hoặc đã hủy!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 

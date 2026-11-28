@@ -64,7 +64,7 @@ namespace QuanLyVanPhongPham.Class
             return false;
         }
 
-        // Kiểm tra quyền ngay trong mã lệnh xử lý (QT13)
+        // Kiểm tra quyền ngay trong mã lệnh xử lý
         public static bool YeuCauQuyen(string tenThaoTac, params string[] danhSachVaiTro)
         {
             if (CoQuyen(danhSachVaiTro))
@@ -159,7 +159,7 @@ namespace QuanLyVanPhongPham.Class
         public static void LuuPhieuNhap(string maPN, DateTime ngayLap, string maNCC, int nguoiLap, DataTable tblChiTiet, bool laPhieuMoi)
         {
             if (tblChiTiet == null || tblChiTiet.Rows.Count == 0)
-                throw new Exception("Phiếu nhập phải có ít nhất một dòng mặt hàng (QT04)!");
+                throw new Exception("Phiếu nhập phải có ít nhất một dòng mặt hàng!");
 
             decimal tongTien = 0;
             foreach (DataRow row in tblChiTiet.Rows)
